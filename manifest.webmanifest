@@ -1,0 +1,25 @@
+{
+  "name": "Trainersomgeving O17",
+  "short_name": "Trainer O17",
+  "description": "Spelersontwikkeling, trainingen en wedstrijdvoorbereiding voor de jeugdtrainer.",
+  "lang": "nl",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "/trainersomgeving-o17",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f1419",
+  "theme_color": "#0f1419",
+  "categories": ["sports", "productivity"],
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Spelers", "url": "./index.html#/spelers" },
+    { "name": "Trainingen", "url": "./index.html#/trainingen" },
+    { "name": "Wedstrijden", "url": "./index.html#/wedstrijden" }
+  ]
+}

@@ -72,16 +72,20 @@ App.store = (function () {
 
   // Geeft true bij succes, false als opslaan mislukte (bijv. opslagruimte vol) —
   // zodat aanroepers een "opgeslagen"-melding nooit tonen als dat niet ook echt zo is.
-  function bewaar() {
+  function bewaar(stilleWijziging) {
     let vorigeRuw = null;
     try { vorigeRuw = localStorage.getItem(SLEUTEL); } catch (e) { /* geen vangnet, niet kritiek */ }
+
+    // Tijdstempel van de laatste inhoudelijke wijziging — hierop bepaalt de synchronisatie
+    // welke kant nieuwer is. Niet bijwerken als we juist een versie van elders overnemen.
+    if (!stilleWijziging) staat.gewijzigdOp = new Date().toISOString();
 
     try {
       localStorage.setItem(SLEUTEL, JSON.stringify(staat));
     } catch (e) {
       console.error('Opslaan mislukt:', e);
       App.util.toastFout('Niet opgeslagen — opslagruimte vol. Maak een back-up en verwijder oude gegevens.');
-      luisteraars.forEach(fn => fn(staat));
+      luisteraars.forEach(fn => fn(staat, !!stilleWijziging));
       return false;
     }
 
@@ -90,7 +94,10 @@ App.store = (function () {
       try { localStorage.setItem(SLEUTEL_VORIGE, vorigeRuw); } catch (e) { /* hoofdopslag lukte al, dit is bijzaak */ }
     }
 
-    luisteraars.forEach(fn => fn(staat));
+    // Luisteraars krijgen mee of dit een eigen wijziging was of een overgenomen versie
+    // (synchronisatie, herstel) — zo weet de synchronisatielaag een net binnengehaalde
+    // versie niet meteen weer als "te versturen" te markeren.
+    luisteraars.forEach(fn => fn(staat, !!stilleWijziging));
     return true;
   }
 
@@ -101,6 +108,14 @@ App.store = (function () {
   }
 
   function opWijziging(fn) { luisteraars.push(fn); }
+
+  // Vervangt de volledige staat door een versie van elders (synchronisatie of back-up).
+  // De wijzigingstijd van die versie blijft staan, zodat niet ten onrechte lijkt alsof
+  // dit apparaat iets nieuws heeft gemaakt.
+  function vervangStaat(nieuweStaat) {
+    staat = migreer(nieuweStaat);
+    return bewaar(true);
+  }
 
   function opslagGrootte() {
     try {
@@ -329,7 +344,7 @@ App.store = (function () {
   }
 
   return {
-    laad, get, bewaar, wijzig, opWijziging, importeer, wisAlles, opslagGrootte,
+    laad, get, bewaar, wijzig, opWijziging, vervangStaat, importeer, wisAlles, opslagGrootte,
     herstelInfo, ruweHerstelData, wisHerstelmelding,
     herstelVorige, heeftVorigeVersie, meldBackupGemaakt, laatsteBackupDatum,
     speler, training, wedstrijd, oefening,
