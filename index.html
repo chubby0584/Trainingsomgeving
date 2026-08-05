@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trainersomgeving O17</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>⚽</text></svg>">
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <span class="brand-mark">⚽</span>
+    <div>
+      <strong id="brandTeam">O17</strong>
+      <small id="brandSeizoen">seizoen</small>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a href="#/dashboard"   data-nav="dashboard">Dashboard</a>
+    <a href="#/spelers"     data-nav="spelers">Spelers</a>
+    <a href="#/trainingen"  data-nav="trainingen">Trainingen</a>
+    <a href="#/oefeningen"  data-nav="oefeningen">Oefenstof</a>
+    <a href="#/wedstrijden" data-nav="wedstrijden">Wedstrijden</a>
+    <a href="#/instellingen" data-nav="instellingen">Instellingen</a>
+  </nav>
+
+  <div class="sidebar-foot">
+    <button class="btn btn-ghost btn-sm" data-action="export-json">Back-up maken</button>
+    <small class="muted" id="opslagInfo"></small>
+  </div>
+</aside>
+
+<main class="main" id="view"></main>
+
+<div class="modal-backdrop" id="modalBackdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <header class="modal-head">
+      <h2 id="modalTitel"></h2>
+      <button class="icon-btn" data-actie="modal-close" aria-label="Sluiten">&times;</button>
+    </header>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="assets/js/util.js"></script>
+<script src="assets/js/seed.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/views-dashboard.js"></script>
+<script src="assets/js/views-spelers.js"></script>
+<script src="assets/js/views-trainingen.js"></script>
+<script src="assets/js/views-oefeningen.js"></script>
+<script src="assets/js/views-wedstrijden.js"></script>
+<script src="assets/js/views-instellingen.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
