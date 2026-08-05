@@ -39,8 +39,26 @@ App.sync = (function () {
     try { localStorage.setItem(sleutel, JSON.stringify(waarde)); } catch (e) { console.warn(e); }
   }
 
+  // Trainers plakken vaak een compleet REST-eindpunt (bijv. eindigend op "/rest/v1/")
+  // in plaats van de kale Project-URL — dat staat overal in Supabase's eigen
+  // documentatie. Alleen schema en host bewaren voorkomt dat elk verzoek straks een
+  // dubbel of fout pad krijgt. Werkt ook met al opgeslagen, nog niet genormaliseerde URL's.
+  function normaliseerUrl(ruw) {
+    const tekst = (ruw || '').trim();
+    if (!tekst) return '';
+    try {
+      return new URL(tekst).origin;
+    } catch (e) {
+      return tekst; // geen geldige URL — laat staan, de eerstvolgende aanmeldpoging geeft dan een duidelijke foutmelding
+    }
+  }
+
   function getConfig() {
-    if (!config) config = leesJson(CONFIG_SLEUTEL, { url: '', sleutel: '', email: '', tokens: null });
+    if (!config) {
+      config = leesJson(CONFIG_SLEUTEL, { url: '', sleutel: '', email: '', tokens: null });
+      const schoon = normaliseerUrl(config.url);
+      if (schoon !== config.url) { config.url = schoon; bewaarConfig(); }
+    }
     return config;
   }
 
@@ -165,7 +183,7 @@ App.sync = (function () {
 
   async function koppel(url, sleutel) {
     config = getConfig();
-    config.url = (url || '').trim();
+    config.url = normaliseerUrl(url);
     config.sleutel = (sleutel || '').trim();
     bewaarConfig();
     zetToestand(isAangemeld() ? 'klaar' : 'aanmelden', '');
