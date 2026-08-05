@@ -1,8 +1,7 @@
 /* Service worker: maakt de app installeerbaar en bruikbaar zonder verbinding.
-   Alleen de eigen bestanden worden gecachet — verkeer naar Supabase gaat altijd
-   rechtstreeks naar het netwerk, zodat je nooit verouderde gegevens te zien krijgt. */
+   Alleen de eigen bestanden worden gecachet. */
 
-const VERSIE = 'trainersomgeving-v3';
+const VERSIE = 'trainersomgeving-v4';
 
 const SCHIL = [
   './',
@@ -12,7 +11,6 @@ const SCHIL = [
   './assets/js/util.js',
   './assets/js/seed.js',
   './assets/js/store.js',
-  './assets/js/sync.js',
   './assets/js/views-dashboard.js',
   './assets/js/views-spelers.js',
   './assets/js/views-trainingen.js',
@@ -48,7 +46,7 @@ self.addEventListener('fetch', (e) => {
   if (verzoek.method !== 'GET') return;
 
   const url = new URL(verzoek.url);
-  if (url.origin !== self.location.origin) return; // Supabase e.d. nooit onderscheppen
+  if (url.origin !== self.location.origin) return; // verzoeken naar andere domeinen ongemoeid laten
 
   // Netwerk eerst, cache als terugval — zo zie je na een update meteen de nieuwe versie,
   // maar blijft de app werken op een veld zonder bereik.

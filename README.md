@@ -12,9 +12,9 @@ in de opslag van jouw browser, op jouw computer.
 Dubbelklik op `index.html`, of open het bestand vanuit je browser.
 
 Wil je het vanaf je telefoon of tablet gebruiken, zet de map dan online (bijvoorbeeld
-via GitHub Pages) en open de URL. Zonder synchronisatie (zie hieronder) is de opslag
-per apparaat en per browser: gegevens op je laptop verschijnen dan niet vanzelf op je
-telefoon. Gebruik in dat geval de back-up (export/import) onder *Instellingen*.
+via GitHub Pages) en open de URL. De opslag is per apparaat en per browser: gegevens
+op je laptop verschijnen niet vanzelf op je telefoon. Gebruik daarvoor de back-up
+(export/import) onder *Instellingen*.
 
 ## Op je telefoon installeren
 
@@ -28,29 +28,6 @@ beginscherm zetten alsof het een gewone app is.
 Daarna opent de omgeving in een eigen venster zonder browserbalk, met een eigen icoon,
 en blijft hij ook zonder bereik werken — handig op een veld met slecht signaal. Alleen
 het eerste bezoek heeft internet nodig om alles voor offline gebruik klaar te zetten.
-
-## Synchroniseren tussen apparaten (optioneel)
-
-Zonder verdere instellingen werkt alles lokaal, zoals hierboven beschreven. Wil je
-dezelfde gegevens op je laptop én je telefoon, dan koppel je onder *Instellingen →
-Online synchronisatie* een gratis [Supabase](https://supabase.com)-project. De
-instellingenpagina bevat de stappen en de exacte SQL die je eenmalig moet uitvoeren.
-
-Een paar dingen om te weten:
-
-- **De browseropslag blijft leidend.** De app wacht nooit op het netwerk om te reageren;
-  synchroniseren gebeurt op de achtergrond, een paar seconden na elke wijziging, en
-  verder automatisch bij het openen van de app en elke vijf minuten.
-- **Bij twijfel wordt nooit stilzwijgend overschreven.** Als twee apparaten allebei
-  wijzigingen hebben die nog niet gedeeld zijn, krijg je expliciet de keuze welke versie
-  moet blijven staan — met een aanbod om eerst een back-up te maken voordat je kiest.
-- **Het is nog steeds gegevens van andermans kinderen.** Namen, geboortedata,
-  oudercontacten, blessures en beoordelingen van minderjarigen vallen onder de AVG.
-  Kies bij het aanmaken van je Supabase-project een EU-regio (bijv. Frankfurt), gebruik
-  een eigen wachtwoord dat je nergens anders gebruikt, en informeer bij je club of zij
-  hier beleid voor hebben.
-- **Uitzetten kan altijd.** *Instellingen → Loskoppelen* verbreekt de koppeling; je
-  lokale gegevens blijven gewoon staan.
 
 ## Wat zit erin
 
@@ -171,7 +148,6 @@ assets/icons/                app-iconen in de benodigde formaten
 assets/js/util.js            hulpfuncties: DOM, datums, opmaak, SVG-grafieken
 assets/js/seed.js            TIPS-model, posities, formaties, start-oefenstof
 assets/js/store.js           opslag en afgeleide berekeningen
-assets/js/sync.js            optionele synchronisatie met Supabase
 assets/js/views-*.js         de schermen
 assets/js/app.js             router en afhandeling van acties
 ```
@@ -179,12 +155,6 @@ assets/js/app.js             router en afhandeling van acties
 Een scherm registreert zichzelf als `App.views.<naam>` met een `render()` en een
 map met acties. Klikken op een element met `data-actie` roept die actie aan; na
 elke wijziging wordt het scherm opnieuw getekend vanuit de opgeslagen staat.
-
-`sync.js` praat rechtstreeks met de REST- en Auth-API van Supabase via `fetch` —
-geen externe bibliotheek, geen bouwstap. Er wordt telkens één rij (de volledige
-staat als JSON) heen en weer gestuurd; `store.js` houdt een `gewijzigdOp`-tijdstempel
-bij waarmee `sync.js` bepaalt welke kant nieuwer is, en de tabel heeft rijbeveiliging
-zodat elk account uitsluitend de eigen rij kan lezen en schrijven.
 
 ## Uitgangspunten bij het gebruik
 

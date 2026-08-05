@@ -72,18 +72,6 @@ App.router = (function () {
     U.$('#brandSeizoen').textContent = team.seizoen || '';
     U.$('#opslagInfo').textContent = S.opslagGrootte() + ' kB opgeslagen';
     werkBackupStatusBij();
-    werkSyncStatusBij();
-  }
-
-  // Korte samenvatting van de synchronisatiestatus, met een kleur die meteen laat zien
-  // of er iets aandacht nodig heeft (fout, conflict) of dat alles gewoon bijgewerkt is.
-  function werkSyncStatusBij() {
-    const el = U.$('#syncInfo');
-    if (!el || !App.sync) return;
-    const t = App.sync.getToestand();
-    el.textContent = (t.staat === 'uit' ? '☁︎ ' : (t.staat === 'conflict' || t.staat === 'fout' ? '⚠ ' : '')) + App.sync.beschrijving();
-    el.style.color = (t.staat === 'conflict' || t.staat === 'fout') ? 'var(--gevaar)'
-      : (t.staat === 'offline' ? 'var(--warn)' : 'var(--muted)');
   }
 
   // Toont hoe lang geleden de laatste back-up is gedownload — de enige echte
@@ -175,17 +163,6 @@ App.router = (function () {
     if (!location.hash) location.hash = '#/dashboard';
     teken();
     toonHerstelmeldingIndienNodig();
-
-    if (App.sync) {
-      App.sync.start();
-      // Eén keer registreren: bij een statuswijziging altijd de zijbalk bijwerken, en de
-      // instellingenpagina her-tekenen als die op dat moment open staat (bijv. na een
-      // automatische sync op de achtergrond, of als daar een conflict uit rolt).
-      App.sync.opWijziging(() => {
-        werkSyncStatusBij();
-        if (huidig.naam === 'instellingen') herteken(true);
-      });
-    }
 
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service worker niet geregistreerd:', e));

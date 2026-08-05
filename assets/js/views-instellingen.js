@@ -1,28 +1,7 @@
-/* Instellingen: teamgegevens, back-up, export, synchronisatie en opschonen. */
+/* Instellingen: teamgegevens, back-up, export en opschonen. */
 
 (function () {
   const U = App.util, S = App.store;
-
-  // Eenmalig door de trainer uit te voeren in de Supabase SQL Editor. Eén rij per
-  // gebruiker (gebruiker_id is de primaire sleutel), met rijbeveiliging zodat elk
-  // account uitsluitend de eigen rij kan lezen en schrijven.
-  const SETUP_SQL = `create table public.teamdata (
-  gebruiker_id uuid primary key references auth.users(id) default auth.uid(),
-  staat jsonb not null,
-  gewijzigd_op timestamptz not null default now(),
-  apparaat text
-);
-
-alter table public.teamdata enable row level security;
-
-create policy "eigen rij lezen" on public.teamdata
-  for select using (auth.uid() = gebruiker_id);
-
-create policy "eigen rij invoegen" on public.teamdata
-  for insert with check (auth.uid() = gebruiker_id);
-
-create policy "eigen rij bijwerken" on public.teamdata
-  for update using (auth.uid() = gebruiker_id) with check (auth.uid() = gebruiker_id);`;
 
   function render() {
     const staat = S.get();
@@ -59,7 +38,6 @@ create policy "eigen rij bijwerken" on public.teamdata
         </div>
 
         <div>
-          ${synchronisatiePaneel()}
           ${betrouwbaarheidPaneel()}
 
           <div class="paneel mb">
@@ -112,100 +90,6 @@ create policy "eigen rij bijwerken" on public.teamdata
           </div>
         </div>
       </div>`;
-  }
-
-  // Drie stappen: project koppelen, aanmelden, en — als je op meerdere apparaten werkt
-  // en beide een wijziging hebben — een keuze maken. Nergens wordt automatisch de ene
-  // versie boven de andere gekozen.
-  function synchronisatiePaneel() {
-    if (!App.sync) return '';
-    const c = App.sync.getConfig();
-    const t = App.sync.getToestand();
-
-    if (!App.sync.isIngesteld()) {
-      return `<div class="paneel mb">
-        <h2>Online synchronisatie</h2>
-        <p class="klein muted">Optioneel: koppel een gratis Supabase-project zodat dezelfde gegevens op
-        je telefoon én je computer staan, met een kopie die niet in deze browser zit. De app blijft
-        gewoon direct reageren en werkt zonder bereik — er wordt alleen op de achtergrond
-        gesynchroniseerd zodra er verbinding is.</p>
-        <details class="klein" style="margin:.6rem 0 1rem">
-          <summary style="cursor:pointer;color:var(--info)">Hoe zet ik dit op? (eenmalig, een paar minuten)</summary>
-          <ol style="padding-left:1.2rem;line-height:1.9;margin:.6rem 0">
-            <li>Maak gratis een project op <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a>.</li>
-            <li>Ga naar <strong>Project Settings → API</strong> en kopieer de <strong>Project URL</strong>.
-              Ga daar ook naar <strong>API Keys</strong> en kopieer de <strong>Publishable key</strong>
-              (begint met <code>sb_publishable_...</code>; heet op oudere Supabase-projecten
-              <strong>anon public</strong> en begint dan met <code>eyJ...</code>).
-              <br><strong style="color:var(--gevaar)">Gebruik nooit de Secret key</strong> (<code>sb_secret_...</code>,
-              vroeger <code>service_role</code>) — die geeft volledige toegang zonder beveiliging en hoort
-              nergens in een app die in de browser draait.</li>
-            <li>Ga naar <strong>SQL Editor</strong>, plak onderstaande SQL en klik <strong>Run</strong> —
-              dit maakt de tabel aan waar je gegevens in komen, met toegang die uitsluitend voor
-              jouw eigen account geldt.</li>
-            <li>Vul hieronder de URL en de sleutel in en klik op <strong>Koppelen</strong>. Daarna kun
-              je meteen een account aanmaken.</li>
-          </ol>
-          <div class="tabel-wrap"><pre style="background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:.7rem;font-size:.78rem;line-height:1.5;white-space:pre">${U.esc(SETUP_SQL)}</pre></div>
-        </details>
-        <div class="veld-rij">
-          <label class="veld"><span>Project-URL</span><input id="syncUrl" placeholder="https://xxxx.supabase.co" value="${U.esc(c.url)}"></label>
-          <label class="veld"><span>Publishable key (of anon public)</span><input id="syncSleutel" placeholder="sb_publishable_... of eyJ..." value="${U.esc(c.sleutel)}"></label>
-        </div>
-        <button class="btn btn-primair" data-actie="sync-koppelen">Koppelen</button>
-      </div>`;
-    }
-
-    if (!App.sync.isAangemeld()) {
-      const foutmelding = (t.staat === 'aanmelden' || t.staat === 'fout') && t.bericht ? t.bericht : '';
-      return `<div class="paneel mb">
-        <h2>Online synchronisatie</h2>
-        <p class="klein muted">Gekoppeld aan <code>${U.esc(c.url)}</code>. Meld je aan met een e-mailadres
-        en wachtwoord — hoeft geen bestaand account te zijn, de eerste keer maak je er meteen een aan.</p>
-        ${foutmelding ? `<p class="klein" style="color:var(--warn)">${U.esc(foutmelding)}</p>` : ''}
-        <div class="veld-rij">
-          <label class="veld"><span>E-mailadres</span><input type="email" id="syncEmail" value="${U.esc(c.email || '')}"></label>
-          <label class="veld"><span>Wachtwoord</span><input type="password" id="syncWachtwoord"></label>
-        </div>
-        <div class="rij">
-          <button class="btn btn-primair" data-actie="sync-aanmelden" ${t.bezig ? 'disabled' : ''}>Aanmelden</button>
-          <button class="btn" data-actie="sync-registreren" ${t.bezig ? 'disabled' : ''}>Nieuw account aanmaken</button>
-          <button class="btn btn-ghost btn-sm" data-actie="sync-ontkoppelen">Andere gegevens invullen</button>
-        </div>
-      </div>`;
-    }
-
-    const conflict = t.staat === 'conflict' ? App.sync.getConflict() : null;
-    const statusKlasse = (t.staat === 'conflict' || t.staat === 'fout') ? 'rood' : (t.staat === 'offline' ? 'geel' : 'groen');
-
-    return `<div class="paneel mb">
-      <div class="paneel-kop">
-        <h2>Online synchronisatie</h2>
-        <span class="badge ${statusKlasse}">${U.esc(App.sync.beschrijving())}</span>
-      </div>
-      <p class="klein muted">Aangemeld als ${U.esc(c.email || '')} · dit apparaat heet "${U.esc(App.sync.apparaatNaam())}".</p>
-
-      ${conflict ? `
-        <div class="paneel" style="border-color:var(--gevaar);margin:.7rem 0">
-          <h3 style="color:var(--gevaar)">Twee versies — kies welke blijft staan</h3>
-          <p class="klein">Dit apparaat én "<strong>${U.esc(conflict.remoteApparaat || 'een ander apparaat')}</strong>"
-          hebben allebei wijzigingen die nog niet gedeeld zijn. De versie die je niet kiest, gaat verloren.
-          Twijfel je? Maak dan eerst een back-up van dit apparaat.</p>
-          <div class="rij mt">
-            <button class="btn btn-sm" data-actie="export-json">Eerst back-up van dit apparaat</button>
-          </div>
-          <div class="veld-rij mt">
-            <button class="btn btn-primair" data-actie="sync-conflict-lokaal">Dit apparaat bewaren</button>
-            <button class="btn" data-actie="sync-conflict-remote">"${U.esc(conflict.remoteApparaat || 'Ander apparaat')}" bewaren</button>
-          </div>
-        </div>` : ''}
-
-      <div class="rij mt">
-        <button class="btn btn-primair" data-actie="sync-nu" ${t.bezig ? 'disabled' : ''}>${t.bezig ? 'Bezig...' : 'Nu synchroniseren'}</button>
-        <button class="btn" data-actie="sync-afmelden">Afmelden</button>
-        <button class="btn btn-gevaar btn-sm" data-actie="sync-ontkoppelen">Loskoppelen</button>
-      </div>
-    </div>`;
   }
 
   // Laat zien hoe lang geleden de laatste back-up is, en biedt een vangnet van één stap
@@ -370,54 +254,6 @@ create policy "eigen rij bijwerken" on public.teamdata
     'import-json': () => U.$('#importBestand').click(),
     'export-spelers-csv': () => exportSpelersCsv(),
     'export-rapport': () => exportRapport(),
-
-    'sync-koppelen': async () => {
-      const url = U.$('#syncUrl').value.trim();
-      const sleutel = U.$('#syncSleutel').value.trim();
-      if (!url || !sleutel) { U.toast('Vul de project-URL en de sleutel in.'); return; }
-      await App.sync.koppel(url, sleutel);
-      App.router.herteken(true);
-    },
-    'sync-aanmelden': async () => {
-      const email = U.$('#syncEmail').value.trim();
-      const ww = U.$('#syncWachtwoord').value;
-      if (!email || !ww) { U.toast('Vul e-mailadres en wachtwoord in.'); return; }
-      try { await App.sync.aanmelden(email, ww, false); }
-      catch (e) { /* de foutmelding staat al in de synchronisatiestatus */ }
-      App.router.herteken(true);
-    },
-    'sync-registreren': async () => {
-      const email = U.$('#syncEmail').value.trim();
-      const ww = U.$('#syncWachtwoord').value;
-      if (!email || !ww) { U.toast('Vul e-mailadres en wachtwoord in.'); return; }
-      if (ww.length < 6) { U.toast('Supabase vereist minimaal 6 tekens voor het wachtwoord.'); return; }
-      try { await App.sync.aanmelden(email, ww, true); }
-      catch (e) { /* de foutmelding staat al in de synchronisatiestatus */ }
-      App.router.herteken(true);
-    },
-    'sync-nu': async () => {
-      await App.sync.synchroniseer(false);
-      App.router.herteken(true);
-    },
-    'sync-afmelden': () => {
-      App.sync.afmelden();
-      App.router.herteken(true);
-    },
-    'sync-ontkoppelen': () => {
-      if (App.sync.isAangemeld() && !U.bevestig('Synchronisatie loskoppelen? Je lokale gegevens blijven gewoon staan, alleen de koppeling met dit Supabase-project verdwijnt.')) return;
-      App.sync.ontkoppel();
-      App.router.herteken(true);
-    },
-    'sync-conflict-lokaal': async () => {
-      if (!U.bevestig('De online versie van het andere apparaat vervangen door de versie van dit apparaat?')) return;
-      await App.sync.losConflictOp('lokaal');
-      App.router.herteken(true);
-    },
-    'sync-conflict-remote': async () => {
-      if (!U.bevestig('Deze lokale wijzigingen vervangen door de online versie? Wat hier nog niet gedeeld is, gaat dan verloren.')) return;
-      await App.sync.losConflictOp('remote');
-      App.router.herteken(true);
-    },
 
     'versie-herstellen': () => {
       if (!U.bevestig('De vorige versie terugzetten? Wijzigingen van je laatste opslagactie gaan dan verloren.')) return;
