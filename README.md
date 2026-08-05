@@ -97,6 +97,30 @@ Maak daarom regelmatig een back-up via *Instellingen → Back-up downloaden*. Da
 levert één JSON-bestand met alles erin, dat je met *Back-up terugzetten* weer
 inleest — ook op een andere computer.
 
+### Ingebouwde bescherming
+
+Omdat er geen server meeleest, is er bewust op vier manieren voorkomen dat werk
+stilzwijgend verloren gaat:
+
+- **Opslaan meldt eerlijk of het lukte.** Als de opslagruimte vol is, verschijnt
+  een rode foutmelding en géén "opgeslagen"-bevestiging. Elke plek in de app die
+  iets bewaart, controleert het werkelijke resultaat voordat er succes wordt
+  gemeld.
+- **Beschadigde gegevens worden nooit overschreven.** Als de opgeslagen data bij
+  het opstarten onleesbaar blijkt, wordt de originele inhoud apart bewaard en
+  krijg je een melding met de mogelijkheid die ruwe data te downloaden — zodat er
+  eventueel nog iets uit te redden valt.
+- **Eén stap terug.** De versie van vóór je laatste opslagactie blijft bewaard.
+  Ging er iets mis, dan zet je die terug via *Instellingen → Vorige versie
+  terugzetten*.
+- **Zichtbare back-upstatus.** In de zijbalk staat hoe lang geleden je voor het
+  laatst een back-up hebt gedownload; die kleurt oranje na een week en rood na
+  twee weken.
+
+Dit vangt gebruikersfouten en browserproblemen op, maar het blijft één apparaat.
+Een gewiste browser of een verloren telefoon is alleen te overleven met een
+gedownloade back-up.
+
 ## Techniek
 
 Losse HTML, CSS en JavaScript zonder afhankelijkheden of bouwstap. Grafieken zijn

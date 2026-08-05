@@ -121,12 +121,27 @@ App.util = (function () {
   /* --- UI --- */
 
   let toastTimer = null;
-  function toast(bericht) {
+  let foutTotTijd = 0; // zolang dit in de toekomst ligt, mag een gewone toast een foutmelding niet overschrijven
+
+  function toonToast(bericht, isFout) {
     const el = $('#toast');
     el.textContent = bericht;
     el.hidden = false;
+    el.classList.toggle('fout', !!isFout);
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { el.hidden = true; }, 2400);
+    toastTimer = setTimeout(() => { el.hidden = true; }, isFout ? 4500 : 2400);
+  }
+
+  function toast(bericht) {
+    if (Date.now() < foutTotTijd) return; // een foutmelding staat er nog — niet zomaar wegklikken met "opgeslagen"
+    toonToast(bericht, false);
+  }
+
+  // Voor opslagfouten: blijft langer staan en kan niet per ongeluk overschreven worden
+  // door een "opgeslagen"-melding die er in dezelfde actie nog achteraan komt.
+  function toastFout(bericht) {
+    foutTotTijd = Date.now() + 4500;
+    toonToast(bericht, true);
   }
 
   function modal(titel, html) {
@@ -283,7 +298,7 @@ App.util = (function () {
     $, $$, uid, esc, tekst, naam, kortenaam, initialen,
     vandaag, datumNL, datumKort, dagenTot, relatief, leeftijd, opDatum,
     rond, gemiddelde, klem,
-    toast, modal, sluitModal, bevestig, download, formData, selectOpties,
+    toast, toastFout, modal, sluitModal, bevestig, download, formData, selectOpties,
     radar, lijnGrafiek, legenda, KLEUREN
   };
 })();

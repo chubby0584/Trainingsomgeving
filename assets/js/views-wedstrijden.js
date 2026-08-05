@@ -344,7 +344,7 @@
       data.thuis = data.thuisKeuze === 'thuis';
       delete data.thuisKeuze;
       let nieuwId = null;
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         if (bestaat) Object.assign(st.wedstrijden.find(y => y.id === x.id), data);
         else {
           const nieuw = Object.assign(S.nieuweWedstrijd(), data);
@@ -353,7 +353,7 @@
         }
       });
       U.sluitModal();
-      U.toast('Wedstrijd opgeslagen');
+      if (ok) U.toast('Wedstrijd opgeslagen');
       if (nieuwId) location.hash = '#/wedstrijd/' + nieuwId;
       else App.router.herteken(true);
     });
@@ -376,7 +376,7 @@
 
     'voorbereiding-opslaan': (el) => {
       const velden = U.$$('[data-veld]');
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         const w = st.wedstrijden.find(x => x.id === el.dataset.id);
         velden.forEach(v => {
           const [groep, sleutel] = v.dataset.veld.split('.');
@@ -384,7 +384,7 @@
           w[groep][sleutel] = v.value;
         });
       });
-      U.toast('Voorbereiding opgeslagen');
+      if (ok) U.toast('Voorbereiding opgeslagen');
     },
 
     'formatie-wissel': (el) => {
@@ -444,7 +444,7 @@
       const gespeeld = U.$('#isGespeeld').value === 'ja';
       const evaluatie = U.$('#wedstrijdEvaluatie').value;
 
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         const w = st.wedstrijden.find(x => x.id === el.dataset.id);
         w.doelpuntenVoor = voor === '' ? null : Number(voor);
         w.doelpuntenTegen = tegen === '' ? null : Number(tegen);
@@ -463,7 +463,7 @@
           if (cijfer !== null || notitie) w.rapporten[id] = { cijfer, notitie };
         });
       });
-      U.toast('Nabespreking opgeslagen');
+      if (ok) U.toast('Nabespreking opgeslagen');
       App.router.herteken(true);
     }
   };

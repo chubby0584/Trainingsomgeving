@@ -447,7 +447,7 @@
       const data = U.formData(body);
       if (!data.voornaam.trim()) { U.toast('Vul minimaal een voornaam in.'); return; }
       data.posities = U.$$('#posChips .chip.aan', body).map(c => c.dataset.pos);
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         if (bestaat) {
           Object.assign(st.spelers.find(x => x.id === s.id), data);
         } else {
@@ -455,7 +455,7 @@
         }
       });
       U.sluitModal();
-      U.toast('Speler opgeslagen');
+      if (ok) U.toast('Speler opgeslagen');
       App.router.herteken(true);
     });
   }
@@ -475,7 +475,7 @@
     U.$('#bulkOpslaan', body).addEventListener('click', () => {
       const regels = U.$('#bulk', body).value.split('\n').map(r => r.trim()).filter(Boolean);
       let aantal = 0;
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         regels.forEach(regel => {
           const delen = regel.split(',').map(d => d.trim());
           let rugnummer = null, naamDeel, positie = '';
@@ -500,7 +500,7 @@
         });
       });
       U.sluitModal();
-      U.toast(aantal + ' spelers toegevoegd');
+      if (ok) U.toast(aantal + ' spelers toegevoegd');
       App.router.herteken(true);
     });
   }
@@ -547,7 +547,7 @@
       Object.keys(ruw).forEach(k => {
         if (k.indexOf('.') !== -1 && ruw[k] !== '') nieuweScores[k] = Number(ruw[k]);
       });
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         const doel = st.spelers.find(x => x.id === spelerId);
         doel.beoordelingen = doel.beoordelingen || [];
         if (bestaand) {
@@ -561,7 +561,7 @@
         }
       });
       U.sluitModal();
-      U.toast('Beoordeling opgeslagen');
+      if (ok) U.toast('Beoordeling opgeslagen');
       tab = 'ontwikkeling';
       App.router.herteken(true);
     });
@@ -606,14 +606,14 @@
     U.$('#opslaanDoel', body).addEventListener('click', () => {
       const data = U.formData(body);
       if (!data.titel.trim()) { U.toast('Geef het doel een titel.'); return; }
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         const doel = st.spelers.find(x => x.id === spelerId);
         doel.doelen = doel.doelen || [];
         if (d) Object.assign(doel.doelen.find(x => x.id === doelId), data);
         else doel.doelen.push(Object.assign({ id: U.uid('dl') }, data));
       });
       U.sluitModal();
-      U.toast('Doel opgeslagen');
+      if (ok) U.toast('Doel opgeslagen');
       App.router.herteken(true);
     });
   }
@@ -635,13 +635,13 @@
     U.$('#opslaanNotitie', body).addEventListener('click', () => {
       const data = U.formData(body);
       if (!data.tekst.trim()) { U.toast('De notitie is nog leeg.'); return; }
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         const sp = st.spelers.find(x => x.id === spelerId);
         sp.notities = sp.notities || [];
         sp.notities.push(Object.assign({ id: U.uid('nt') }, data));
       });
       U.sluitModal();
-      U.toast('Notitie opgeslagen');
+      if (ok) U.toast('Notitie opgeslagen');
       App.router.herteken(true);
     });
   }
@@ -656,10 +656,10 @@
     'speler-verwijder': (el) => {
       const sp = S.speler(el.dataset.id);
       if (!U.bevestig('Speler ' + U.naam(sp) + ' definitief verwijderen?')) return;
-      S.wijzig(st => { st.spelers = st.spelers.filter(x => x.id !== sp.id); });
+      const ok = S.wijzig(st => { st.spelers = st.spelers.filter(x => x.id !== sp.id); });
       U.sluitModal();
       location.hash = '#/spelers';
-      U.toast('Speler verwijderd');
+      if (ok) U.toast('Speler verwijderd');
     },
     'tab': (el) => { tab = el.dataset.tab; App.router.herteken(true); },
     'beoordeling-nieuw': (el) => beoordelingFormulier(el.dataset.id, null),
@@ -675,11 +675,11 @@
     'doel-nieuw': (el) => doelFormulier(el.dataset.id, null),
     'doel-bewerk': (el) => doelFormulier(el.dataset.id, el.dataset.did),
     'doel-behaald': (el) => {
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         const sp = st.spelers.find(x => x.id === el.dataset.id);
         sp.doelen.find(d => d.id === el.dataset.did).status = 'behaald';
       });
-      U.toast('Doel afgevinkt');
+      if (ok) U.toast('Doel afgevinkt');
       App.router.herteken(true);
     },
     'doel-verwijder': (el) => {

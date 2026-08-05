@@ -38,6 +38,8 @@
         </div>
 
         <div>
+          ${betrouwbaarheidPaneel()}
+
           <div class="paneel mb">
             <h2>Back-up en overzetten</h2>
             <p class="klein muted">Alles staat in de opslag van deze browser — niet in de cloud. Maak regelmatig een back-up,
@@ -90,6 +92,37 @@
       </div>`;
   }
 
+  // Laat zien hoe lang geleden de laatste back-up is, en biedt een vangnet van één stap
+  // terug voor als er per ongeluk iets fout is gegaan bij een opslagactie.
+  function betrouwbaarheidPaneel() {
+    const datum = S.laatsteBackupDatum();
+    let statusTekst, statusKlasse;
+    if (!datum) {
+      statusTekst = 'Nog geen back-up gemaakt';
+      statusKlasse = 'rood';
+    } else {
+      const dagen = -U.dagenTot(datum);
+      statusTekst = dagen <= 0 ? 'Vandaag een back-up gemaakt' : dagen + ' dag' + (dagen === 1 ? '' : 'en') + ' geleden een back-up gemaakt';
+      statusKlasse = dagen >= 14 ? 'rood' : (dagen >= 7 ? 'geel' : 'groen');
+    }
+
+    return `<div class="paneel mb">
+      <h2>Betrouwbaarheid van je gegevens</h2>
+      <p class="klein muted">Alles staat alleen lokaal in deze browser. Er is geen cloud-kopie —
+      een back-up downloaden is de enige manier om gegevens veilig te stellen tegen een gewiste
+      browser, een kapot toestel of een overstap naar een andere computer of telefoon.</p>
+      <div class="rij-tussen" style="padding:.3rem 0">
+        <span class="klein">Status</span>
+        <span class="badge ${statusKlasse}">${U.esc(statusTekst)}</span>
+      </div>
+      ${S.heeftVorigeVersie() ? `
+        <div class="rij-tussen mt" style="padding-top:.6rem;border-top:1px solid var(--line)">
+          <span class="klein muted">Vangnet: de versie van vóór je laatste opslagactie is nog bewaard.</span>
+          <button class="btn btn-sm" data-actie="versie-herstellen">Vorige versie terugzetten</button>
+        </div>` : ''}
+    </div>`;
+  }
+
   function na() {
     const bestand = U.$('#importBestand');
     if (!bestand) return;
@@ -99,11 +132,14 @@
       const lezer = new FileReader();
       lezer.onload = () => {
         try {
-          S.importeer(lezer.result);
-          U.toast('Back-up teruggezet');
+          if (S.importeer(lezer.result)) {
+            U.toast('Back-up teruggezet');
+          } else {
+            U.toastFout('Gelezen, maar niet opgeslagen — opslagruimte vol?');
+          }
           App.router.herteken(true);
         } catch (e) {
-          U.toast('Bestand kon niet gelezen worden');
+          U.toast('Bestand kon niet gelezen worden — is dit een back-up van deze omgeving?');
           console.error(e);
         }
       };
@@ -212,18 +248,27 @@
   const acties = {
     'team-opslaan': () => {
       const data = U.formData(U.$('#view'));
-      S.wijzig(st => { Object.assign(st.team, data); });
-      U.toast('Teamgegevens opgeslagen');
+      if (S.wijzig(st => { Object.assign(st.team, data); })) U.toast('Teamgegevens opgeslagen');
       App.router.werkSidebarBij();
     },
     'import-json': () => U.$('#importBestand').click(),
     'export-spelers-csv': () => exportSpelersCsv(),
     'export-rapport': () => exportRapport(),
+    'versie-herstellen': () => {
+      if (!U.bevestig('De vorige versie terugzetten? Wijzigingen van je laatste opslagactie gaan dan verloren.')) return;
+      if (S.herstelVorige()) {
+        U.toast('Vorige versie teruggezet');
+        location.hash = '#/dashboard';
+        App.router.herteken(true);
+      } else {
+        U.toastFout('Terugzetten is niet gelukt.');
+      }
+    },
     'alles-wissen': () => {
       if (!U.bevestig('Alle gegevens wissen? Dit kan niet ongedaan gemaakt worden.')) return;
       if (!U.bevestig('Echt zeker? Maak eerst een back-up als je die nog niet hebt.')) return;
-      S.wisAlles();
-      U.toast('Alles gewist');
+      if (S.wisAlles()) U.toast('Alles gewist');
+      else U.toastFout('Wissen is niet volledig gelukt — probeer het nog eens.');
       location.hash = '#/dashboard';
       App.router.herteken(true);
     }

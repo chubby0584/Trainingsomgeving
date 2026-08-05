@@ -14,6 +14,8 @@ App.router = (function () {
       'export-json': () => {
         const naam = 'trainersomgeving-' + (S.get().team.naam || 'team').replace(/\s+/g, '-').toLowerCase() + '-' + U.vandaag() + '.json';
         U.download(naam, JSON.stringify(S.get(), null, 2));
+        S.meldBackupGemaakt();
+        werkSidebarBij();
         U.toast('Back-up gedownload');
       }
     };
@@ -69,6 +71,52 @@ App.router = (function () {
     U.$('#brandTeam').textContent = team.naam || 'Team';
     U.$('#brandSeizoen').textContent = team.seizoen || '';
     U.$('#opslagInfo').textContent = S.opslagGrootte() + ' kB opgeslagen';
+    werkBackupStatusBij();
+  }
+
+  // Toont hoe lang geleden de laatste back-up is gedownload — de enige echte
+  // beveiliging tegen een gewiste browser of een verloren toestel.
+  function werkBackupStatusBij() {
+    const el = U.$('#backupInfo');
+    if (!el) return;
+    const datum = S.laatsteBackupDatum();
+    if (!datum) {
+      el.textContent = 'Nog geen back-up gemaakt';
+      el.style.color = 'var(--gevaar)';
+      return;
+    }
+    const dagen = -U.dagenTot(datum);
+    el.textContent = dagen <= 0 ? 'Back-up van vandaag'
+      : 'Laatste back-up: ' + dagen + ' dag' + (dagen === 1 ? '' : 'en') + ' geleden';
+    el.style.color = dagen >= 14 ? 'var(--gevaar)' : (dagen >= 7 ? 'var(--warn)' : 'var(--muted)');
+  }
+
+  // Een leesfout bij het opstarten mag nooit onopgemerkt blijven: de onleesbare data
+  // is al veiliggesteld door store.laad(), maar de trainer moet het kunnen zien en
+  // desgewenst een kopie downloaden voordat er verder gewerkt wordt.
+  function toonHerstelmeldingIndienNodig() {
+    if (!S.herstelInfo()) return;
+    const ruw = S.ruweHerstelData();
+    const body = U.modal('De opgeslagen gegevens waren onleesbaar', `
+      <p>De gegevens die eerder in deze browser stonden konden niet gelezen worden —
+      mogelijk zijn ze beschadigd geraakt. Er is nu een lege omgeving gestart zodat je
+      verder kunt werken.</p>
+      <p><strong>Er is niets weggegooid.</strong> De oorspronkelijke, onleesbare data staat
+      nog apart bewaard. Download 'm hieronder voor het geval er alsnog iets uit te
+      herstellen valt.</p>
+      <div class="modal-acties">
+        ${ruw ? '<button class="btn" id="downloadHerstel">Onleesbare data downloaden</button>' : ''}
+        <button class="btn btn-primair" id="herstelBegrepen">Begrepen, verdergaan</button>
+      </div>`);
+    if (ruw) {
+      U.$('#downloadHerstel', body).addEventListener('click', () => {
+        U.download('herstel-onleesbare-data-' + U.vandaag() + '.json', ruw);
+      });
+    }
+    U.$('#herstelBegrepen', body).addEventListener('click', () => {
+      S.wisHerstelmelding();
+      U.sluitModal();
+    });
   }
 
   /* --- events --- */
@@ -114,6 +162,7 @@ App.router = (function () {
     werkSidebarBij();
     if (!location.hash) location.hash = '#/dashboard';
     teken();
+    toonHerstelmeldingIndienNodig();
   }
 
   return { start, teken, herteken, werkSidebarBij, get huidig() { return huidig; } };

@@ -2,21 +2,54 @@
 
 App.store = (function () {
 
-  const SLEUTEL = 'trainersomgeving-o17';
+  const SLEUTEL         = 'trainersomgeving-o17';
+  const SLEUTEL_VORIGE   = 'trainersomgeving-o17-vorige';   // laatst bewaarde staat vóór de huidige — vangnet bij een foute actie
+  const SLEUTEL_HERSTEL  = 'trainersomgeving-o17-herstel';  // onleesbare data die niet verloren mag gaan
+  const SLEUTEL_BACKUP   = 'trainersomgeving-o17-laatste-backup';
+
   let staat = null;
+  let herstelmelding = null; // gezet als laad() onleesbare data tegenkwam; UI toont dit dan expliciet
   const luisteraars = [];
 
   /* --- laden & bewaren --- */
 
+  // Nooit stilzwijgend een lege staat teruggeven zonder dat de ruwe data ergens bewaard blijft:
+  // een leesfout (beschadigde JSON, incompatibele opslag) mag niet leiden tot het per ongeluk
+  // overschrijven van de laatste goede back-up bij de eerstvolgende opslagactie.
   function laad() {
+    let ruw = null;
     try {
-      const ruw = localStorage.getItem(SLEUTEL);
-      staat = ruw ? migreer(JSON.parse(ruw)) : App.seed.nieuweStaat();
+      ruw = localStorage.getItem(SLEUTEL);
     } catch (e) {
-      console.warn('Opgeslagen gegevens konden niet gelezen worden:', e);
+      console.error('localStorage is niet bereikbaar:', e);
       staat = App.seed.nieuweStaat();
+      return staat;
+    }
+
+    if (!ruw) { staat = App.seed.nieuweStaat(); return staat; }
+
+    try {
+      staat = migreer(JSON.parse(ruw));
+    } catch (e) {
+      console.error('Opgeslagen gegevens konden niet gelezen worden:', e);
+      try { localStorage.setItem(SLEUTEL_HERSTEL, ruw); } catch (e2) { /* dan kan er niets meer aan gedaan worden */ }
+      herstelmelding = { datum: new Date().toISOString() };
+      staat = App.seed.nieuweStaat();
+      // De onleesbare bytes staan nu veilig onder SLEUTEL_HERSTEL. Schrijf meteen een geldige
+      // lege staat terug naar de hoofdsleutel, zodat de melding maar één keer verschijnt en
+      // een volgende herlaadbeurt niet opnieuw op dezelfde kapotte data struikelt.
+      try { localStorage.setItem(SLEUTEL, JSON.stringify(staat)); } catch (e3) { /* niet kritiek, wordt bij de eerste actie alsnog geprobeerd */ }
     }
     return staat;
+  }
+
+  function herstelInfo() { return herstelmelding; }
+  function ruweHerstelData() {
+    try { return localStorage.getItem(SLEUTEL_HERSTEL); } catch (e) { return null; }
+  }
+  function wisHerstelmelding() {
+    try { localStorage.removeItem(SLEUTEL_HERSTEL); } catch (e) { /* niet kritiek */ }
+    herstelmelding = null;
   }
 
   function migreer(data) {
@@ -37,20 +70,34 @@ App.store = (function () {
     return staat;
   }
 
+  // Geeft true bij succes, false als opslaan mislukte (bijv. opslagruimte vol) —
+  // zodat aanroepers een "opgeslagen"-melding nooit tonen als dat niet ook echt zo is.
   function bewaar() {
+    let vorigeRuw = null;
+    try { vorigeRuw = localStorage.getItem(SLEUTEL); } catch (e) { /* geen vangnet, niet kritiek */ }
+
     try {
       localStorage.setItem(SLEUTEL, JSON.stringify(staat));
     } catch (e) {
-      App.util.toast('Opslaan mislukt — opslagruimte vol?');
-      console.error(e);
+      console.error('Opslaan mislukt:', e);
+      App.util.toastFout('Niet opgeslagen — opslagruimte vol. Maak een back-up en verwijder oude gegevens.');
+      luisteraars.forEach(fn => fn(staat));
+      return false;
     }
+
+    // Vangnet: bewaar de vorige staat apart, zodat een foute actie ongedaan te maken is.
+    if (vorigeRuw) {
+      try { localStorage.setItem(SLEUTEL_VORIGE, vorigeRuw); } catch (e) { /* hoofdopslag lukte al, dit is bijzaak */ }
+    }
+
     luisteraars.forEach(fn => fn(staat));
+    return true;
   }
 
-  // Wijzig de staat en sla direct op.
+  // Wijzig de staat en sla direct op. Geeft door of het opslaan echt is gelukt.
   function wijzig(fn) {
     fn(get());
-    bewaar();
+    return bewaar();
   }
 
   function opWijziging(fn) { luisteraars.push(fn); }
@@ -65,12 +112,42 @@ App.store = (function () {
     const data = JSON.parse(json);
     if (!data || typeof data !== 'object') throw new Error('Onbekend bestandsformaat');
     staat = migreer(data);
-    bewaar();
+    return bewaar();
   }
 
   function wisAlles() {
     staat = App.seed.nieuweStaat();
-    bewaar();
+    return bewaar();
+  }
+
+  // Eén stap terug — herstelt de staat van vóór de laatste opslagactie. Laatste redmiddel
+  // als er per ongeluk iets fout is gegaan; geen volledige historie, alleen één stap.
+  function herstelVorige() {
+    let ruw;
+    try { ruw = localStorage.getItem(SLEUTEL_VORIGE); } catch (e) { return false; }
+    if (!ruw) return false;
+    try {
+      staat = migreer(JSON.parse(ruw));
+    } catch (e) {
+      console.error('Vorige versie kon niet gelezen worden:', e);
+      return false;
+    }
+    return bewaar();
+  }
+
+  function heeftVorigeVersie() {
+    try { return !!localStorage.getItem(SLEUTEL_VORIGE); } catch (e) { return false; }
+  }
+
+  function meldBackupGemaakt() {
+    try { localStorage.setItem(SLEUTEL_BACKUP, new Date().toISOString()); } catch (e) { /* niet kritiek */ }
+  }
+
+  function laatsteBackupDatum() {
+    try {
+      const ruw = localStorage.getItem(SLEUTEL_BACKUP);
+      return ruw ? ruw.slice(0, 10) : null;
+    } catch (e) { return null; }
   }
 
   /* --- opzoeken --- */
@@ -253,6 +330,8 @@ App.store = (function () {
 
   return {
     laad, get, bewaar, wijzig, opWijziging, importeer, wisAlles, opslagGrootte,
+    herstelInfo, ruweHerstelData, wisHerstelmelding,
+    herstelVorige, heeftVorigeVersie, meldBackupGemaakt, laatsteBackupDatum,
     speler, training, wedstrijd, oefening,
     spelersGesorteerd, trainingenGesorteerd, wedstrijdenGesorteerd,
     nieuweSpeler, nieuweTraining, nieuweWedstrijd, nieuweOefening,

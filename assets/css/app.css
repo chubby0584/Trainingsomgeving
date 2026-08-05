@@ -359,6 +359,7 @@ td.rechts, th.rechts { text-align: right; }
   z-index: 100;
 }
 .toast[hidden] { display: none; }
+.toast.fout { background: var(--gevaar); font-weight: 600; }
 
 /* ---------- Veld / opstelling ---------- */
 

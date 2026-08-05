@@ -142,12 +142,12 @@
       data.thema = U.$$('#themaChips .chip.aan', body).map(c => c.dataset.thema);
       data.coachpunten = data.coachpunten.split('\n').map(s => s.trim()).filter(Boolean);
       data.variaties = data.variaties.split('\n').map(s => s.trim()).filter(Boolean);
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         if (bestaat) Object.assign(st.oefeningen.find(y => y.id === x.id), data);
         else st.oefeningen.push(Object.assign(S.nieuweOefening(), data));
       });
       U.sluitModal();
-      U.toast('Oefening opgeslagen');
+      if (ok) U.toast('Oefening opgeslagen');
       App.router.herteken(true);
     });
   }
@@ -184,7 +184,7 @@
 
     U.$('#planIn', body).addEventListener('click', () => {
       const data = U.formData(body);
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         const t = st.trainingen.find(y => y.id === data.trainingId);
         t.blokken = t.blokken || [];
         t.blokken.push({
@@ -193,7 +193,7 @@
         });
       });
       U.sluitModal();
-      U.toast('Toegevoegd aan de training');
+      if (ok) U.toast('Toegevoegd aan de training');
     });
   }
 

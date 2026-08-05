@@ -249,7 +249,7 @@
     U.$('#opslaanTraining', body).addEventListener('click', () => {
       const data = U.formData(body);
       let nieuwId = null;
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         if (bestaat) Object.assign(st.trainingen.find(y => y.id === x.id), data);
         else {
           const nieuw = Object.assign(S.nieuweTraining(), data);
@@ -258,7 +258,7 @@
         }
       });
       U.sluitModal();
-      U.toast('Training opgeslagen');
+      if (ok) U.toast('Training opgeslagen');
       if (nieuwId) location.hash = '#/training/' + nieuwId;
       else App.router.herteken(true);
     });
@@ -350,7 +350,7 @@
 
       const start = new Date(data.start + 'T00:00:00');
       let aantal = 0;
-      S.wijzig(st => {
+      const ok = S.wijzig(st => {
         for (let w = 0; w < Number(data.weken); w++) {
           for (let d = 0; d < 7; d++) {
             const dag = new Date(start.getTime() + (w * 7 + d) * 86400000);
@@ -363,7 +363,7 @@
         }
       });
       U.sluitModal();
-      U.toast(aantal + ' trainingen ingepland');
+      if (ok) U.toast(aantal + ' trainingen ingepland');
       App.router.herteken(true);
     });
   }
@@ -411,8 +411,9 @@
     },
     'evaluatie-opslaan': (el) => {
       const waarde = U.$('#trainingEvaluatie').value;
-      S.wijzig(st => { st.trainingen.find(t => t.id === el.dataset.id).evaluatie = waarde; });
-      U.toast('Evaluatie opgeslagen');
+      if (S.wijzig(st => { st.trainingen.find(t => t.id === el.dataset.id).evaluatie = waarde; })) {
+        U.toast('Evaluatie opgeslagen');
+      }
     }
   };
 
