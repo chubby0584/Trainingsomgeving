@@ -133,8 +133,13 @@ create policy "eigen rij bijwerken" on public.teamdata
           <summary style="cursor:pointer;color:var(--info)">Hoe zet ik dit op? (eenmalig, een paar minuten)</summary>
           <ol style="padding-left:1.2rem;line-height:1.9;margin:.6rem 0">
             <li>Maak gratis een project op <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a>.</li>
-            <li>Ga naar <strong>Project Settings → API</strong> en kopieer de <strong>Project URL</strong>
-              en de <strong>anon public</strong>-sleutel.</li>
+            <li>Ga naar <strong>Project Settings → API</strong> en kopieer de <strong>Project URL</strong>.
+              Ga daar ook naar <strong>API Keys</strong> en kopieer de <strong>Publishable key</strong>
+              (begint met <code>sb_publishable_...</code>; heet op oudere Supabase-projecten
+              <strong>anon public</strong> en begint dan met <code>eyJ...</code>).
+              <br><strong style="color:var(--gevaar)">Gebruik nooit de Secret key</strong> (<code>sb_secret_...</code>,
+              vroeger <code>service_role</code>) — die geeft volledige toegang zonder beveiliging en hoort
+              nergens in een app die in de browser draait.</li>
             <li>Ga naar <strong>SQL Editor</strong>, plak onderstaande SQL en klik <strong>Run</strong> —
               dit maakt de tabel aan waar je gegevens in komen, met toegang die uitsluitend voor
               jouw eigen account geldt.</li>
@@ -145,7 +150,7 @@ create policy "eigen rij bijwerken" on public.teamdata
         </details>
         <div class="veld-rij">
           <label class="veld"><span>Project-URL</span><input id="syncUrl" placeholder="https://xxxx.supabase.co" value="${U.esc(c.url)}"></label>
-          <label class="veld"><span>Anon public-sleutel</span><input id="syncSleutel" placeholder="eyJ..." value="${U.esc(c.sleutel)}"></label>
+          <label class="veld"><span>Publishable key (of anon public)</span><input id="syncSleutel" placeholder="sb_publishable_... of eyJ..." value="${U.esc(c.sleutel)}"></label>
         </div>
         <button class="btn btn-primair" data-actie="sync-koppelen">Koppelen</button>
       </div>`;
